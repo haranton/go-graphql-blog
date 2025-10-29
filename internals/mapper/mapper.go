@@ -50,7 +50,6 @@ func MapPostWithCommentsDomainToGraph(p *models.PostWithComments) *gqlmodel.Post
 		author = p.Author
 	}
 
-	// построим дерево комментариев: сначала те у которых ParentID == nil
 	var comments []*gqlmodel.Comment
 	for i := range p.Comments {
 		if p.Comments[i].ParentID == nil {

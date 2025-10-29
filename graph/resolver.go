@@ -9,10 +9,10 @@ import (
 // It serves as dependency injection for your app, add any dependencies you require here.
 
 type Resolver struct {
-	Service *service.PostService
+	Service *service.Service
 }
 
-func NewResolver(service *service.PostService) *Resolver {
+func NewResolver(service *service.Service) *Resolver {
 	return &Resolver{
 		Service: service,
 	}

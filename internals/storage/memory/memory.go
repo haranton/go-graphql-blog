@@ -15,6 +15,8 @@ import (
 // 	CreateComment(ctx context.Context, comment *models.Comment) (*models.Comment, error)
 // }
 
+//todo Оптимизация поиска
+
 type MemoryStorage struct {
 	posts         []*models.Post
 	comments      []*models.Comment
@@ -91,4 +93,20 @@ func (st *MemoryStorage) PostWithComments(ctx context.Context, idPost int) (*mod
 	resultPostWithComments.Comments = comments
 	st.mu.Unlock()
 	return &resultPostWithComments, nil
+}
+
+func (st *MemoryStorage) CreateComment(ctx context.Context, comment *models.Comment) (*models.Comment, error) {
+	st.mu.Lock()
+	defer st.mu.Unlock()
+	comment.ID = st.nextCommentID + 1
+	comment.CreatedAt = time.Now()
+	comment.UpdatedAt = time.Now()
+	st.nextCommentID++
+
+	stored := *comment
+	st.comments = append(st.comments, &stored)
+
+	result := stored
+
+	return &result, nil
 }
