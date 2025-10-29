@@ -15,14 +15,8 @@ type Post struct {
 }
 
 type PostWithComments struct {
-	ID            int       `db:"id"`
-	Title         string    `db:"title"`
-	Content       string    `db:"content"`
-	Author        *string   `db:"author"`
-	AllowComments bool      `db:"allow_comments"`
-	CreatedAt     time.Time `db:"created_at"`
-	UpdatedAt     time.Time `db:"updated_at"`
-	Comments      []Comment
+	Post
+	Comments []Comment
 }
 
 type Comment struct {

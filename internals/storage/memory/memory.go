@@ -3,6 +3,7 @@ package memory
 import (
 	"context"
 	"sync"
+	"time"
 
 	"github.com/haranton/go-graphql-blog/internals/models"
 )
@@ -30,7 +31,7 @@ func NewMemoryStorage() *MemoryStorage {
 	}
 }
 
-func (st *MemoryStorage) Post(ctx context.Context) ([]models.Post, error) {
+func (st *MemoryStorage) Posts(ctx context.Context) ([]models.Post, error) {
 	st.mu.Lock()
 	defer st.mu.Unlock()
 
@@ -42,17 +43,52 @@ func (st *MemoryStorage) Post(ctx context.Context) ([]models.Post, error) {
 	return resultPosts, nil
 }
 
-func (st *MemoryStorage) CreatePost(ctx context.Context, post *models.Post) (models.Post, error) {
+func (st *MemoryStorage) CreatePost(ctx context.Context, post *models.Post) (*models.Post, error) {
 	st.mu.Lock()
 	defer st.mu.Unlock()
 	post.ID = st.nextPostID + 1
-	st.posts = append(st.posts, post)
-	st.nextPostID = st.nextPostID + 1
+	post.CreatedAt = time.Now()
+	post.UpdatedAt = time.Now()
+	st.nextPostID++
 
-	return *post, nil
+	stored := *post
+	st.posts = append(st.posts, &stored)
+
+	result := stored
+
+	return &result, nil
 }
 
 func (st *MemoryStorage) PostWithComments(ctx context.Context, idPost int) (*models.PostWithComments, error) {
 	st.mu.Lock()
 
+	isFindPost := false
+	var resultPostWithComments models.PostWithComments
+	for _, post := range st.posts {
+		if post.ID == idPost {
+			isFindPost = true
+			resultPostWithComments.AllowComments = post.AllowComments
+			resultPostWithComments.Author = post.Author
+			resultPostWithComments.Content = post.Content
+			resultPostWithComments.CreatedAt = post.CreatedAt
+			resultPostWithComments.ID = post.ID
+			resultPostWithComments.Title = post.Title
+			resultPostWithComments.UpdatedAt = post.UpdatedAt
+		}
+	}
+
+	if !isFindPost {
+		st.mu.Unlock()
+		return nil, nil
+	}
+
+	var comments []models.Comment
+	for _, comment := range st.comments {
+		if comment.PostID == idPost {
+			comments = append(comments, *comment)
+		}
+	}
+	resultPostWithComments.Comments = comments
+	st.mu.Unlock()
+	return &resultPostWithComments, nil
 }

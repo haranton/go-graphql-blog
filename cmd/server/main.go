@@ -11,6 +11,8 @@ import (
 	"github.com/99designs/gqlgen/graphql/handler/transport"
 	"github.com/99designs/gqlgen/graphql/playground"
 	"github.com/haranton/go-graphql-blog/graph"
+	"github.com/haranton/go-graphql-blog/internals/service"
+	"github.com/haranton/go-graphql-blog/internals/storage/memory"
 	"github.com/vektah/gqlparser/v2/ast"
 )
 
@@ -22,7 +24,14 @@ func main() {
 		port = defaultPort
 	}
 
-	srv := handler.New(graph.NewExecutableSchema(graph.Config{Resolvers: &graph.Resolver{}}))
+	store := memory.NewMemoryStorage()
+
+	postService := service.NewPostService(store)
+
+	resolver := graph.NewResolver(postService)
+
+	// Настраиваем GraphQL сервер
+	srv := handler.NewDefaultServer(graph.NewExecutableSchema(graph.Config{Resolvers: resolver}))
 
 	srv.AddTransport(transport.Options{})
 	srv.AddTransport(transport.GET{})
