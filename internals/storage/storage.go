@@ -11,4 +11,6 @@ type Storage interface {
 	CreatePost(ctx context.Context, post *models.Post) (*models.Post, error)
 	PostWithComments(ctx context.Context, idPost int) (*models.PostWithComments, error)
 	CreateComment(ctx context.Context, comment *models.Comment) (*models.Comment, error)
+	CreateUser(ctx context.Context, user *models.User) (*models.User, error)
+	UserByLogin(ctx context.Context, login string) (*models.User, error)
 }

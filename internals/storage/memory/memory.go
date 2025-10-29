@@ -20,9 +20,11 @@ import (
 type MemoryStorage struct {
 	posts         []*models.Post
 	comments      []*models.Comment
+	users         []*models.User
 	mu            sync.Mutex
 	nextPostID    int
 	nextCommentID int
+	nextUserID    int
 }
 
 func NewMemoryStorage() *MemoryStorage {
@@ -30,6 +32,7 @@ func NewMemoryStorage() *MemoryStorage {
 	return &MemoryStorage{
 		posts:    []*models.Post{},
 		comments: []*models.Comment{},
+		users:    []*models.User{},
 	}
 }
 
@@ -109,4 +112,26 @@ func (st *MemoryStorage) CreateComment(ctx context.Context, comment *models.Comm
 	result := stored
 
 	return &result, nil
+}
+
+func (st *MemoryStorage) CreateUser(ctx context.Context, user *models.User) (*models.User, error) {
+	st.mu.Lock()
+	defer st.mu.Unlock()
+
+	user.ID = st.nextUserID + 1
+	st.nextUserID++
+	st.users = append(st.users, user)
+	return user, nil
+}
+
+func (st *MemoryStorage) UserByLogin(ctx context.Context, login string) (*models.User, error) {
+	st.mu.Lock()
+	defer st.mu.Unlock()
+
+	for _, u := range st.users {
+		if u.Login == login {
+			return u, nil
+		}
+	}
+	return nil, nil
 }

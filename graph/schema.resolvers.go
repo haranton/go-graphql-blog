@@ -24,19 +24,20 @@ func (r *mutationResolver) CreatePost(ctx context.Context, title string, content
 
 // AddComment is the resolver for the addComment field.
 func (r *mutationResolver) AddComment(ctx context.Context, postID string, parentID *string, content string) (*model.Comment, error) {
-	posts, err := r.Service.SrvComm.AddComment(ctx, postID, parentID, content)
-	if err != nil {
-		fmt.Println("Error:", err)
-		return nil, err
-	}
+	// posts, err := r.Service.SrvComm.AddComment(ctx, postID, parentID, content)
+	// if err != nil {
+	// 	fmt.Println("Error:", err)
+	// 	return nil, err
+	// }
 
-	return posts, nil
+	// return posts, nil
+	panic(fmt.Errorf("not implemented: Post - post"))
 }
 
 // Posts is the resolver for the posts field.
 func (r *queryResolver) Posts(ctx context.Context) ([]*model.Post, error) {
 
-	posts, err := r.Service.Posts(ctx)
+	posts, err := r.Service.SrvPost.Posts(ctx)
 	if err != nil {
 		fmt.Println("Error:", err)
 		return nil, err

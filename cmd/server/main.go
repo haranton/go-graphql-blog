@@ -1,6 +1,7 @@
 package main
 
 import (
+	"context"
 	"log"
 	"net/http"
 	"os"
@@ -18,6 +19,10 @@ import (
 
 const defaultPort = "8080"
 
+type contextKey string
+
+const userCtxKey = contextKey("user")
+
 func main() {
 	port := os.Getenv("PORT")
 	if port == "" {
@@ -26,9 +31,9 @@ func main() {
 
 	store := memory.NewMemoryStorage()
 
-	postService := service.NewPostService(store)
+	serv := service.NewService(store)
 
-	resolver := graph.NewResolver(postService)
+	resolver := graph.NewResolver(serv)
 
 	// Настраиваем GraphQL сервер
 	srv := handler.NewDefaultServer(graph.NewExecutableSchema(graph.Config{Resolvers: resolver}))
@@ -49,4 +54,26 @@ func main() {
 
 	log.Printf("connect to http://localhost:%s/ for GraphQL playground", port)
 	log.Fatal(http.ListenAndServe(":"+port, nil))
+}
+
+func basicAuth(authService *service.Service, next http.Handler) http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		login, pass, ok := r.BasicAuth()
+		if !ok {
+			w.Header().Set("WWW-Authenticate", `Basic realm="Restricted"`)
+			http.Error(w, "Unauthorized", http.StatusUnauthorized)
+			return
+		}
+
+		user, err := service.AuthService.Authenticate(r.Context(), login, pass)
+		if err != nil {
+			http.Error(w, "Unauthorized", http.StatusUnauthorized)
+			return
+		}
+
+		ctx := context.WithValue(r.Context(), userCtxKey, user)
+		r = r.WithContext(ctx)
+
+		next.ServeHTTP(w, r)
+	})
 }

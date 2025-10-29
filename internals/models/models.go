@@ -28,3 +28,9 @@ type Comment struct {
 	CreatedAt time.Time `db:"created_at"`
 	UpdatedAt time.Time `db:"updated_at"`
 }
+
+type User struct {
+	ID       int    `db:"id"`
+	Login    string `db:"login"`
+	Password string `db:"password"`
+}
