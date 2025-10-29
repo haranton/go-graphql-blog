@@ -6,6 +6,7 @@ import (
 	"strconv"
 
 	gqlmodel "github.com/haranton/go-graphql-blog/graph/model"
+	"github.com/haranton/go-graphql-blog/internals/auth"
 	"github.com/haranton/go-graphql-blog/internals/mapper"
 	"github.com/haranton/go-graphql-blog/internals/models"
 	"github.com/haranton/go-graphql-blog/internals/storage"
@@ -19,7 +20,7 @@ func NewCommentService(store storage.Storage) *commentService {
 	return &commentService{store: store}
 }
 
-func (s *commentService) AddComment(ctx context.Context, postIDStr string, parentIDStr *string, content string, author *string) (*gqlmodel.Comment, error) {
+func (s *commentService) AddComment(ctx context.Context, postIDStr string, parentIDStr *string, content string) (*gqlmodel.Comment, error) {
 	if content == "" { // возможно излишняя проверка todo
 		return nil, errors.New("content must be provided")
 	}
@@ -38,10 +39,12 @@ func (s *commentService) AddComment(ctx context.Context, postIDStr string, paren
 		parentID = &pid
 	}
 
+	user := auth.ForContext(ctx)
+
 	domainComment := &models.Comment{
 		PostID:   postID,
 		ParentID: parentID,
-		Author:   author,
+		UserID:   user.ID,
 		Content:  content,
 	}
 

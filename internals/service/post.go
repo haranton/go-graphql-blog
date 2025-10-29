@@ -6,6 +6,7 @@ import (
 	"strconv"
 
 	gqlmodel "github.com/haranton/go-graphql-blog/graph/model"
+	"github.com/haranton/go-graphql-blog/internals/auth"
 	"github.com/haranton/go-graphql-blog/internals/mapper"
 	"github.com/haranton/go-graphql-blog/internals/models"
 	"github.com/haranton/go-graphql-blog/internals/storage"
@@ -39,15 +40,17 @@ func (s *postService) Posts(ctx context.Context) ([]*gqlmodel.Post, error) {
 }
 
 // Создание нового поста
-func (s *postService) CreatePost(ctx context.Context, title string, content string, author *string) (*gqlmodel.Post, error) {
+func (s *postService) CreatePost(ctx context.Context, title string, content string) (*gqlmodel.Post, error) {
 	if title == "" || content == "" { // todo возможно излично
 		return nil, errors.New("title and content must be provided")
 	}
 
+	user := auth.ForContext(ctx) //todo возможно нужна проверка на nil
+
 	domainPost := &models.Post{
 		Title:         title,
 		Content:       content,
-		Author:        author,
+		UserID:        user.ID,
 		AllowComments: true,
 	}
 

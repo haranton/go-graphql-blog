@@ -3,6 +3,7 @@ package service
 import (
 	"context"
 	"errors"
+	"fmt"
 
 	"github.com/haranton/go-graphql-blog/internals/models"
 	"github.com/haranton/go-graphql-blog/internals/storage"
@@ -31,4 +32,34 @@ func (s *AuthService) Authenticate(ctx context.Context, login, password string) 
 	}
 
 	return user, nil
+}
+
+func (s *AuthService) RegisterUser(ctx context.Context, login, password string) (*models.User, error) {
+
+	existing, err := s.store.UserByLogin(ctx, login)
+	if err != nil {
+		return nil, err
+	}
+	if existing != nil {
+		return nil, fmt.Errorf("login already exists")
+	}
+
+	hashed, err := hashPassword(password)
+	if err != nil {
+		return nil, err
+	}
+	userDomain := &models.User{
+		Login:    login,
+		Password: hashed,
+	}
+	created, err := s.store.CreateUser(ctx, userDomain)
+	if err != nil {
+		return nil, err
+	}
+	return created, nil
+}
+
+func hashPassword(password string) (string, error) {
+	bytes, err := bcrypt.GenerateFromPassword([]byte(password), bcrypt.DefaultCost)
+	return string(bytes), err
 }

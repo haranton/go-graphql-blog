@@ -73,7 +73,7 @@ func (st *MemoryStorage) PostWithComments(ctx context.Context, idPost int) (*mod
 		if post.ID == idPost {
 			isFindPost = true
 			resultPostWithComments.AllowComments = post.AllowComments
-			resultPostWithComments.Author = post.Author
+			resultPostWithComments.UserID = post.UserID
 			resultPostWithComments.Content = post.Content
 			resultPostWithComments.CreatedAt = post.CreatedAt
 			resultPostWithComments.ID = post.ID

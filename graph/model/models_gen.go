@@ -6,7 +6,6 @@ type Comment struct {
 	ID       string     `json:"id"`
 	PostID   string     `json:"postId"`
 	ParentID *string    `json:"parentId,omitempty"`
-	Author   *string    `json:"author,omitempty"`
 	Content  string     `json:"content"`
 	Replies  []*Comment `json:"replies,omitempty"`
 }
@@ -18,7 +17,6 @@ type Post struct {
 	ID            string     `json:"id"`
 	Title         string     `json:"title"`
 	Content       string     `json:"content"`
-	Author        *string    `json:"author,omitempty"`
 	AllowComments bool       `json:"allowComments"`
 	Comments      []*Comment `json:"comments"`
 }
@@ -27,4 +25,9 @@ type Query struct {
 }
 
 type Subscription struct {
+}
+
+type User struct {
+	ID    string `json:"id"`
+	Login string `json:"login"`
 }

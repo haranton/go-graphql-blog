@@ -7,14 +7,28 @@ package graph
 import (
 	"context"
 	"fmt"
+	"strconv"
 
 	"github.com/haranton/go-graphql-blog/graph/model"
 )
 
+// Register is the resolver for the register field.
+func (r *mutationResolver) Register(ctx context.Context, login string, password string) (*model.User, error) {
+	createdUser, err := r.Service.SrvAuth.RegisterUser(ctx, login, password)
+	if err != nil {
+		return nil, err
+	}
+
+	return &model.User{
+		ID:    strconv.Itoa(createdUser.ID),
+		Login: createdUser.Login,
+	}, nil
+}
+
 // CreatePost is the resolver for the createPost field.
 func (r *mutationResolver) CreatePost(ctx context.Context, title string, content string) (*model.Post, error) {
 
-	post, err := r.Service.SrvPost.CreatePost(ctx, title, content, nil)
+	post, err := r.Service.SrvPost.CreatePost(ctx, title, content)
 	if err != nil {
 		return nil, err
 	}
@@ -24,19 +38,17 @@ func (r *mutationResolver) CreatePost(ctx context.Context, title string, content
 
 // AddComment is the resolver for the addComment field.
 func (r *mutationResolver) AddComment(ctx context.Context, postID string, parentID *string, content string) (*model.Comment, error) {
-	// posts, err := r.Service.SrvComm.AddComment(ctx, postID, parentID, content)
-	// if err != nil {
-	// 	fmt.Println("Error:", err)
-	// 	return nil, err
-	// }
+	posts, err := r.Service.SrvComm.AddComment(ctx, postID, parentID, content)
+	if err != nil {
+		fmt.Println("Error:", err)
+		return nil, err
+	}
 
-	// return posts, nil
-	panic(fmt.Errorf("not implemented: Post - post"))
+	return posts, nil
 }
 
 // Posts is the resolver for the posts field.
 func (r *queryResolver) Posts(ctx context.Context) ([]*model.Post, error) {
-
 	posts, err := r.Service.SrvPost.Posts(ctx)
 	if err != nil {
 		fmt.Println("Error:", err)
@@ -44,7 +56,6 @@ func (r *queryResolver) Posts(ctx context.Context) ([]*model.Post, error) {
 	}
 
 	return posts, nil
-
 }
 
 // Post is the resolver for the post field.
@@ -69,18 +80,3 @@ func (r *Resolver) Subscription() SubscriptionResolver { return &subscriptionRes
 type mutationResolver struct{ *Resolver }
 type queryResolver struct{ *Resolver }
 type subscriptionResolver struct{ *Resolver }
-
-// !!! WARNING !!!
-// The code below was going to be deleted when updating resolvers. It has been copied here so you have
-// one last chance to move it out of harms way if you want. There are two reasons this happens:
-//  - When renaming or deleting a resolver the old code will be put in here. You can safely delete
-//    it when you're done.
-//  - You have helper methods in this file. Move them out to keep these resolver files clean.
-/*
-	func (r *mutationResolver) CreateTodo(ctx context.Context, input model.NewTodo) (*model.Todo, error) {
-	panic(fmt.Errorf("not implemented: CreateTodo - createTodo"))
-}
-func (r *queryResolver) Todos(ctx context.Context) ([]*model.Todo, error) {
-	panic(fmt.Errorf("not implemented: Todos - todos"))
-}
-*/

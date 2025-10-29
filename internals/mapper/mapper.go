@@ -18,10 +18,6 @@ func MapCommentDomainToGraph(c *models.Comment, all []models.Comment) *gqlmodel.
 		s := strconv.Itoa(*c.ParentID)
 		parentID = &s
 	}
-	var author *string
-	if c.Author != nil {
-		author = c.Author
-	}
 
 	// собираем ответы (replies) — те комментарии, у которых ParentID == c.ID
 	var replies []*gqlmodel.Comment
@@ -35,7 +31,6 @@ func MapCommentDomainToGraph(c *models.Comment, all []models.Comment) *gqlmodel.
 		ID:       strconv.Itoa(c.ID),
 		PostID:   strconv.Itoa(c.PostID),
 		ParentID: parentID,
-		Author:   author,
 		Content:  c.Content,
 		Replies:  replies,
 	}
@@ -44,10 +39,6 @@ func MapCommentDomainToGraph(c *models.Comment, all []models.Comment) *gqlmodel.
 func MapPostWithCommentsDomainToGraph(p *models.PostWithComments) *gqlmodel.Post {
 	if p == nil {
 		return nil
-	}
-	var author *string
-	if p.Author != nil {
-		author = p.Author
 	}
 
 	var comments []*gqlmodel.Comment
@@ -61,7 +52,6 @@ func MapPostWithCommentsDomainToGraph(p *models.PostWithComments) *gqlmodel.Post
 		ID:            strconv.Itoa(p.ID),
 		Title:         p.Title,
 		Content:       p.Content,
-		Author:        author,
 		AllowComments: p.AllowComments,
 		Comments:      comments,
 	}
