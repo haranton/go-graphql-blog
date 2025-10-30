@@ -17,6 +17,10 @@ exec:
   # Optional: Maximum number of goroutines in concurrency to use per child resolvers(default: unlimited)
   # worker_limit: 1000
 
+# directives:
+#   auth:
+#     skip: true
+
 # Uncomment to enable federation
 # federation:
 #   filename: graph/federation.go
@@ -157,3 +161,11 @@ models:
     model:
       - github.com/99designs/gqlgen/graphql.Int
       - github.com/99designs/gqlgen/graphql.Int64
+  Post:
+    fields:
+      comments:
+        resolver: true
+  Comment:
+    fields:
+      replies:
+        resolver: true

@@ -2,6 +2,8 @@ package memory
 
 import (
 	"context"
+	"fmt"
+	"sort"
 	"sync"
 	"time"
 
@@ -87,15 +89,8 @@ func (st *MemoryStorage) PostWithComments(ctx context.Context, idPost int) (*mod
 		return nil, nil
 	}
 
-	var comments []models.Comment
-	for _, comment := range st.comments {
-		if comment.PostID == idPost {
-			comments = append(comments, *comment)
-		}
-	}
-	resultPostWithComments.Comments = comments
 	st.mu.Unlock()
-	return &resultPostWithComments, nil
+	return &resultPostWithComments, nil //todo убраны комментарии
 }
 
 func (st *MemoryStorage) CreateComment(ctx context.Context, comment *models.Comment) (*models.Comment, error) {
@@ -134,4 +129,57 @@ func (st *MemoryStorage) UserByLogin(ctx context.Context, login string) (*models
 		}
 	}
 	return nil, nil
+}
+
+func (st *MemoryStorage) ListComments(ctx context.Context, postID int, parentID *int, limit, offset int) ([]models.Comment, error) {
+	st.mu.Lock()
+	defer st.mu.Unlock()
+
+	var filtered []models.Comment
+	for _, c := range st.comments {
+		if c.PostID != postID {
+			continue
+		}
+
+		// Проверяем соответствие parentID
+		matchesParent := (parentID == nil && c.ParentID == nil) ||
+			(parentID != nil && c.ParentID != nil && *c.ParentID == *parentID)
+
+		if matchesParent {
+			filtered = append(filtered, *c)
+		}
+	}
+
+	// Сортируем по времени создания (если есть поле CreatedAt)
+	sort.Slice(filtered, func(i, j int) bool {
+		return filtered[i].CreatedAt.Before(filtered[j].CreatedAt)
+	})
+
+	// Пагинация
+	if offset >= len(filtered) {
+		return []models.Comment{}, nil
+	}
+
+	end := offset + limit
+	if end > len(filtered) {
+		end = len(filtered)
+	}
+
+	return filtered[offset:end], nil
+}
+
+func (st *MemoryStorage) SetPostAllowComments(ctx context.Context, postID int, userID int, allow bool) error {
+	st.mu.Lock()
+	defer st.mu.Unlock()
+	for _, p := range st.posts {
+		if p.ID == postID {
+			if p.UserID != userID {
+				return fmt.Errorf("forbidden: not post owner")
+			}
+			p.AllowComments = allow
+			p.UpdatedAt = time.Now()
+			return nil
+		}
+	}
+	return fmt.Errorf("post not found")
 }

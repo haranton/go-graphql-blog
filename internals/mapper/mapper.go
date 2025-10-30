@@ -7,24 +7,15 @@ import (
 	"github.com/haranton/go-graphql-blog/internals/models"
 )
 
-func MapCommentDomainToGraph(c *models.Comment, all []models.Comment) *gqlmodel.Comment {
+func MapCommentDomainToGraph(c *models.Comment) *gqlmodel.Comment {
 	if c == nil {
 		return nil
 	}
 
-	// конвертируем базовые поля
 	var parentID *string
 	if c.ParentID != nil {
 		s := strconv.Itoa(*c.ParentID)
 		parentID = &s
-	}
-
-	// собираем ответы (replies) — те комментарии, у которых ParentID == c.ID
-	var replies []*gqlmodel.Comment
-	for i := range all {
-		if all[i].ParentID != nil && *all[i].ParentID == c.ID {
-			replies = append(replies, MapCommentDomainToGraph(&all[i], all))
-		}
 	}
 
 	return &gqlmodel.Comment{
@@ -32,7 +23,7 @@ func MapCommentDomainToGraph(c *models.Comment, all []models.Comment) *gqlmodel.
 		PostID:   strconv.Itoa(c.PostID),
 		ParentID: parentID,
 		Content:  c.Content,
-		Replies:  replies,
+		Replies:  nil, // не заполняем Replies здесь
 	}
 }
 
@@ -43,8 +34,9 @@ func MapPostWithCommentsDomainToGraph(p *models.PostWithComments) *gqlmodel.Post
 
 	var comments []*gqlmodel.Comment
 	for i := range p.Comments {
+		// берём только корневые (parentID == nil)
 		if p.Comments[i].ParentID == nil {
-			comments = append(comments, MapCommentDomainToGraph(&p.Comments[i], p.Comments))
+			comments = append(comments, MapCommentDomainToGraph(&p.Comments[i]))
 		}
 	}
 

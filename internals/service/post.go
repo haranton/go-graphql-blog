@@ -83,3 +83,18 @@ func (s *postService) PostWithComments(ctx context.Context, idStr string) (*gqlm
 
 	return mapper.MapPostWithCommentsDomainToGraph(post), nil
 }
+
+func (s *postService) DisallowComments(ctx context.Context, postIDStr string) (bool, error) {
+	id, err := strconv.Atoi(postIDStr)
+	if err != nil {
+		return false, err
+	}
+	user := auth.ForContext(ctx)
+	if user == nil {
+		return false, errors.New("unauthorized")
+	}
+	if err := s.store.SetPostAllowComments(ctx, id, user.ID, false); err != nil {
+		return false, err
+	}
+	return true, nil
+}

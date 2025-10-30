@@ -13,4 +13,6 @@ type Storage interface {
 	CreateComment(ctx context.Context, comment *models.Comment) (*models.Comment, error)
 	CreateUser(ctx context.Context, user *models.User) (*models.User, error)
 	UserByLogin(ctx context.Context, login string) (*models.User, error)
+	ListComments(ctx context.Context, postID int, parentID *int, limit, offset int) ([]models.Comment, error)
+	SetPostAllowComments(ctx context.Context, postID int, userID int, allow bool) error
 }

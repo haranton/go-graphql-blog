@@ -5,6 +5,7 @@ go 1.25.1
 require (
 	github.com/99designs/gqlgen v0.17.81
 	github.com/ilyakaznacheev/cleanenv v1.5.0
+	github.com/jmoiron/sqlx v1.4.0
 	github.com/lmittmann/tint v1.1.2
 	github.com/vektah/gqlparser/v2 v2.5.30
 	golang.org/x/crypto v0.43.0
