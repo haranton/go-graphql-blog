@@ -46,6 +46,11 @@ func (r *mutationResolver) AddComment(ctx context.Context, postID string, parent
 	return posts, nil
 }
 
+// DisallowComments is the resolver for the disallowComments field.
+func (r *mutationResolver) DisallowComments(ctx context.Context, postID string) (bool, error) {
+	panic(fmt.Errorf("not implemented: DisallowComments - disallowComments"))
+}
+
 // Posts is the resolver for the posts field.
 func (r *queryResolver) Posts(ctx context.Context) ([]*model.Post, error) {
 	posts, err := r.Service.SrvPost.Posts(ctx)
@@ -59,7 +64,13 @@ func (r *queryResolver) Posts(ctx context.Context) ([]*model.Post, error) {
 
 // Post is the resolver for the post field.
 func (r *queryResolver) Post(ctx context.Context, id string) (*model.Post, error) {
-	panic(fmt.Errorf("not implemented: Post - post"))
+	postWithComments, err := r.Service.SrvPost.PostWithComments(ctx, id)
+	if err != nil {
+		fmt.Println("Error:", err)
+		return nil, err
+	}
+
+	return postWithComments, nil
 }
 
 // NewComment is the resolver for the newComment field.
@@ -79,3 +90,25 @@ func (r *Resolver) Subscription() SubscriptionResolver { return &subscriptionRes
 type mutationResolver struct{ *Resolver }
 type queryResolver struct{ *Resolver }
 type subscriptionResolver struct{ *Resolver }
+
+// !!! WARNING !!!
+// The code below was going to be deleted when updating resolvers. It has been copied here so you have
+// one last chance to move it out of harms way if you want. There are two reasons this happens:
+//  - When renaming or deleting a resolver the old code will be put in here. You can safely delete
+//    it when you're done.
+//  - You have helper methods in this file. Move them out to keep these resolver files clean.
+/*
+	func (r *postResolver) Comments(ctx context.Context, obj *model.Post, limit int, offset int) ([]*model.Comment, error) {
+	return r.Resolver.Service.SrvComm.GetComments(ctx, obj.ID, limit, offset)
+}
+func (r *commentResolver) Replies(ctx context.Context, obj *model.Comment, limit int, offset int) ([]*model.Comment, error) {
+	if obj.ID == "" || obj.PostID == "" {
+		return nil, nil
+	}
+	return r.Resolver.Service.SrvComm.GetReplies(ctx, obj.PostID, obj.ID, limit, offset)
+}
+type postResolver struct{ *Resolver }
+type commentResolver struct{ *Resolver }
+func (r *Resolver) Post() PostResolver       { return &postResolver{r} }
+func (r *Resolver) Comment() CommentResolver { return &commentResolver{r} }
+*/

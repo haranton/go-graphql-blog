@@ -7,7 +7,7 @@ type Comment struct {
 	PostID   string     `json:"postId"`
 	ParentID *string    `json:"parentId,omitempty"`
 	Content  string     `json:"content"`
-	Replies  []*Comment `json:"replies,omitempty"`
+	Replies  []*Comment `json:"replies"`
 }
 
 type Mutation struct {

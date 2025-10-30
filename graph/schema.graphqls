@@ -5,7 +5,7 @@ type Post {
   title: String!
   content: String!
   allowComments: Boolean!
-  comments: [Comment!]!
+  comments(limit: Int!, offset: Int!): [Comment!]!
 }
 
 type Comment {
@@ -13,7 +13,7 @@ type Comment {
   postId: ID!
   parentId: ID
   content: String!
-  replies: [Comment!]
+  replies(limit: Int!, offset: Int!): [Comment!]!
 }
 
 type User {
@@ -30,6 +30,7 @@ type Mutation {
     register(login: String!, password: String!): User!
     createPost(title: String!, content: String!): Post! @auth
     addComment(postId: ID!, parentId: ID, content: String!): Comment! @auth
+    disallowComments(postId: ID!): Boolean! @auth
 }
 
 type Subscription {
