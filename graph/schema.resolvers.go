@@ -12,6 +12,14 @@ import (
 	"github.com/haranton/go-graphql-blog/graph/model"
 )
 
+// Replies is the resolver for the replies field.
+func (r *commentResolver) Replies(ctx context.Context, obj *model.Comment, limit int32, offset int32) ([]*model.Comment, error) {
+	if obj == nil || obj.ID == "" || obj.PostID == "" {
+		return []*model.Comment{}, nil
+	}
+	return r.Service.SrvComm.GetReplies(ctx, obj.PostID, obj.ID, int(limit), int(offset))
+}
+
 // Register is the resolver for the register field.
 func (r *mutationResolver) Register(ctx context.Context, login string, password string) (*model.User, error) {
 	createdUser, err := r.Service.SrvAuth.RegisterUser(ctx, login, password)
@@ -48,7 +56,15 @@ func (r *mutationResolver) AddComment(ctx context.Context, postID string, parent
 
 // DisallowComments is the resolver for the disallowComments field.
 func (r *mutationResolver) DisallowComments(ctx context.Context, postID string) (bool, error) {
-	panic(fmt.Errorf("not implemented: DisallowComments - disallowComments"))
+	return r.Service.SrvPost.DisallowComments(ctx, postID)
+}
+
+// Comments is the resolver for the comments field.
+func (r *postResolver) Comments(ctx context.Context, obj *model.Post, limit int32, offset int32) ([]*model.Comment, error) {
+	if obj == nil || obj.ID == "" {
+		return []*model.Comment{}, nil
+	}
+	return r.Service.SrvComm.GetComments(ctx, obj.ID, int(limit), int(offset))
 }
 
 // Posts is the resolver for the posts field.
@@ -78,8 +94,14 @@ func (r *subscriptionResolver) NewComment(ctx context.Context, postID string) (<
 	panic(fmt.Errorf("not implemented: NewComment - newComment"))
 }
 
+// Comment returns CommentResolver implementation.
+func (r *Resolver) Comment() CommentResolver { return &commentResolver{r} }
+
 // Mutation returns MutationResolver implementation.
 func (r *Resolver) Mutation() MutationResolver { return &mutationResolver{r} }
+
+// Post returns PostResolver implementation.
+func (r *Resolver) Post() PostResolver { return &postResolver{r} }
 
 // Query returns QueryResolver implementation.
 func (r *Resolver) Query() QueryResolver { return &queryResolver{r} }
@@ -87,28 +109,8 @@ func (r *Resolver) Query() QueryResolver { return &queryResolver{r} }
 // Subscription returns SubscriptionResolver implementation.
 func (r *Resolver) Subscription() SubscriptionResolver { return &subscriptionResolver{r} }
 
+type commentResolver struct{ *Resolver }
 type mutationResolver struct{ *Resolver }
+type postResolver struct{ *Resolver }
 type queryResolver struct{ *Resolver }
 type subscriptionResolver struct{ *Resolver }
-
-// !!! WARNING !!!
-// The code below was going to be deleted when updating resolvers. It has been copied here so you have
-// one last chance to move it out of harms way if you want. There are two reasons this happens:
-//  - When renaming or deleting a resolver the old code will be put in here. You can safely delete
-//    it when you're done.
-//  - You have helper methods in this file. Move them out to keep these resolver files clean.
-/*
-	func (r *postResolver) Comments(ctx context.Context, obj *model.Post, limit int, offset int) ([]*model.Comment, error) {
-	return r.Resolver.Service.SrvComm.GetComments(ctx, obj.ID, limit, offset)
-}
-func (r *commentResolver) Replies(ctx context.Context, obj *model.Comment, limit int, offset int) ([]*model.Comment, error) {
-	if obj.ID == "" || obj.PostID == "" {
-		return nil, nil
-	}
-	return r.Resolver.Service.SrvComm.GetReplies(ctx, obj.PostID, obj.ID, limit, offset)
-}
-type postResolver struct{ *Resolver }
-type commentResolver struct{ *Resolver }
-func (r *Resolver) Post() PostResolver       { return &postResolver{r} }
-func (r *Resolver) Comment() CommentResolver { return &commentResolver{r} }
-*/

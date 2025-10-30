@@ -39,7 +39,9 @@ type Config struct {
 }
 
 type ResolverRoot interface {
+	Comment() CommentResolver
 	Mutation() MutationResolver
+	Post() PostResolver
 	Query() QueryResolver
 	Subscription() SubscriptionResolver
 }
@@ -87,11 +89,17 @@ type ComplexityRoot struct {
 	}
 }
 
+type CommentResolver interface {
+	Replies(ctx context.Context, obj *model.Comment, limit int32, offset int32) ([]*model.Comment, error)
+}
 type MutationResolver interface {
 	Register(ctx context.Context, login string, password string) (*model.User, error)
 	CreatePost(ctx context.Context, title string, content string) (*model.Post, error)
 	AddComment(ctx context.Context, postID string, parentID *string, content string) (*model.Comment, error)
 	DisallowComments(ctx context.Context, postID string) (bool, error)
+}
+type PostResolver interface {
+	Comments(ctx context.Context, obj *model.Post, limit int32, offset int32) ([]*model.Comment, error)
 }
 type QueryResolver interface {
 	Posts(ctx context.Context) ([]*model.Post, error)
@@ -724,7 +732,8 @@ func (ec *executionContext) _Comment_replies(ctx context.Context, field graphql.
 		field,
 		ec.fieldContext_Comment_replies,
 		func(ctx context.Context) (any, error) {
-			return obj.Replies, nil
+			fc := graphql.GetFieldContext(ctx)
+			return ec.resolvers.Comment().Replies(ctx, obj, fc.Args["limit"].(int32), fc.Args["offset"].(int32))
 		},
 		nil,
 		ec.marshalNComment2ᚕᚖgithubᚗcomᚋharantonᚋgoᚑgraphqlᚑblogᚋgraphᚋmodelᚐCommentᚄ,
@@ -737,8 +746,8 @@ func (ec *executionContext) fieldContext_Comment_replies(ctx context.Context, fi
 	fc = &graphql.FieldContext{
 		Object:     "Comment",
 		Field:      field,
-		IsMethod:   false,
-		IsResolver: false,
+		IsMethod:   true,
+		IsResolver: true,
 		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
 			switch field.Name {
 			case "id":
@@ -1125,7 +1134,8 @@ func (ec *executionContext) _Post_comments(ctx context.Context, field graphql.Co
 		field,
 		ec.fieldContext_Post_comments,
 		func(ctx context.Context) (any, error) {
-			return obj.Comments, nil
+			fc := graphql.GetFieldContext(ctx)
+			return ec.resolvers.Post().Comments(ctx, obj, fc.Args["limit"].(int32), fc.Args["offset"].(int32))
 		},
 		nil,
 		ec.marshalNComment2ᚕᚖgithubᚗcomᚋharantonᚋgoᚑgraphqlᚑblogᚋgraphᚋmodelᚐCommentᚄ,
@@ -1138,8 +1148,8 @@ func (ec *executionContext) fieldContext_Post_comments(ctx context.Context, fiel
 	fc = &graphql.FieldContext{
 		Object:     "Post",
 		Field:      field,
-		IsMethod:   false,
-		IsResolver: false,
+		IsMethod:   true,
+		IsResolver: true,
 		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
 			switch field.Name {
 			case "id":
@@ -2951,25 +2961,56 @@ func (ec *executionContext) _Comment(ctx context.Context, sel ast.SelectionSet, 
 		case "id":
 			out.Values[i] = ec._Comment_id(ctx, field, obj)
 			if out.Values[i] == graphql.Null {
-				out.Invalids++
+				atomic.AddUint32(&out.Invalids, 1)
 			}
 		case "postId":
 			out.Values[i] = ec._Comment_postId(ctx, field, obj)
 			if out.Values[i] == graphql.Null {
-				out.Invalids++
+				atomic.AddUint32(&out.Invalids, 1)
 			}
 		case "parentId":
 			out.Values[i] = ec._Comment_parentId(ctx, field, obj)
 		case "content":
 			out.Values[i] = ec._Comment_content(ctx, field, obj)
 			if out.Values[i] == graphql.Null {
-				out.Invalids++
+				atomic.AddUint32(&out.Invalids, 1)
 			}
 		case "replies":
-			out.Values[i] = ec._Comment_replies(ctx, field, obj)
-			if out.Values[i] == graphql.Null {
-				out.Invalids++
+			field := field
+
+			innerFunc := func(ctx context.Context, fs *graphql.FieldSet) (res graphql.Marshaler) {
+				defer func() {
+					if r := recover(); r != nil {
+						ec.Error(ctx, ec.Recover(ctx, r))
+					}
+				}()
+				res = ec._Comment_replies(ctx, field, obj)
+				if res == graphql.Null {
+					atomic.AddUint32(&fs.Invalids, 1)
+				}
+				return res
 			}
+
+			if field.Deferrable != nil {
+				dfs, ok := deferred[field.Deferrable.Label]
+				di := 0
+				if ok {
+					dfs.AddField(field)
+					di = len(dfs.Values) - 1
+				} else {
+					dfs = graphql.NewFieldSet([]graphql.CollectedField{field})
+					deferred[field.Deferrable.Label] = dfs
+				}
+				dfs.Concurrently(di, func(ctx context.Context) graphql.Marshaler {
+					return innerFunc(ctx, dfs)
+				})
+
+				// don't run the out.Concurrently() call below
+				out.Values[i] = graphql.Null
+				continue
+			}
+
+			out.Concurrently(i, func(ctx context.Context) graphql.Marshaler { return innerFunc(ctx, out) })
 		default:
 			panic("unknown field " + strconv.Quote(field.Name))
 		}
@@ -3077,28 +3118,59 @@ func (ec *executionContext) _Post(ctx context.Context, sel ast.SelectionSet, obj
 		case "id":
 			out.Values[i] = ec._Post_id(ctx, field, obj)
 			if out.Values[i] == graphql.Null {
-				out.Invalids++
+				atomic.AddUint32(&out.Invalids, 1)
 			}
 		case "title":
 			out.Values[i] = ec._Post_title(ctx, field, obj)
 			if out.Values[i] == graphql.Null {
-				out.Invalids++
+				atomic.AddUint32(&out.Invalids, 1)
 			}
 		case "content":
 			out.Values[i] = ec._Post_content(ctx, field, obj)
 			if out.Values[i] == graphql.Null {
-				out.Invalids++
+				atomic.AddUint32(&out.Invalids, 1)
 			}
 		case "allowComments":
 			out.Values[i] = ec._Post_allowComments(ctx, field, obj)
 			if out.Values[i] == graphql.Null {
-				out.Invalids++
+				atomic.AddUint32(&out.Invalids, 1)
 			}
 		case "comments":
-			out.Values[i] = ec._Post_comments(ctx, field, obj)
-			if out.Values[i] == graphql.Null {
-				out.Invalids++
+			field := field
+
+			innerFunc := func(ctx context.Context, fs *graphql.FieldSet) (res graphql.Marshaler) {
+				defer func() {
+					if r := recover(); r != nil {
+						ec.Error(ctx, ec.Recover(ctx, r))
+					}
+				}()
+				res = ec._Post_comments(ctx, field, obj)
+				if res == graphql.Null {
+					atomic.AddUint32(&fs.Invalids, 1)
+				}
+				return res
 			}
+
+			if field.Deferrable != nil {
+				dfs, ok := deferred[field.Deferrable.Label]
+				di := 0
+				if ok {
+					dfs.AddField(field)
+					di = len(dfs.Values) - 1
+				} else {
+					dfs = graphql.NewFieldSet([]graphql.CollectedField{field})
+					deferred[field.Deferrable.Label] = dfs
+				}
+				dfs.Concurrently(di, func(ctx context.Context) graphql.Marshaler {
+					return innerFunc(ctx, dfs)
+				})
+
+				// don't run the out.Concurrently() call below
+				out.Values[i] = graphql.Null
+				continue
+			}
+
+			out.Concurrently(i, func(ctx context.Context) graphql.Marshaler { return innerFunc(ctx, out) })
 		default:
 			panic("unknown field " + strconv.Quote(field.Name))
 		}
