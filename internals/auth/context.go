@@ -8,9 +8,9 @@ import (
 
 type contextKey string
 
-const userCtxKey contextKey = "user"
+const UserCtxKey contextKey = "user"
 
 func ForContext(ctx context.Context) *models.User {
-	raw, _ := ctx.Value(userCtxKey).(*models.User)
+	raw, _ := ctx.Value(UserCtxKey).(*models.User)
 	return raw
 }

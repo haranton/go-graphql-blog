@@ -1,7 +1,9 @@
 package main
 
 import (
+	"bytes"
 	"context"
+	"io"
 	"log"
 	"net/http"
 	"os"
@@ -13,16 +15,13 @@ import (
 	"github.com/99designs/gqlgen/graphql/playground"
 	"github.com/haranton/go-graphql-blog/graph"
 	"github.com/haranton/go-graphql-blog/graph/directives"
+	"github.com/haranton/go-graphql-blog/internals/auth"
 	"github.com/haranton/go-graphql-blog/internals/service"
 	"github.com/haranton/go-graphql-blog/internals/storage/memory"
 	"github.com/vektah/gqlparser/v2/ast"
 )
 
 const defaultPort = "8080"
-
-type contextKey string
-
-const userCtxKey = contextKey("user")
 
 func main() {
 	port := os.Getenv("PORT")
@@ -58,6 +57,7 @@ func main() {
 
 	http.Handle("/", playground.Handler("GraphQL playground", "/query"))
 	http.Handle("/query", basicAuthMiddleware(serv, srv))
+	// http.Handle("/query", srv)
 
 	log.Printf("connect to http://localhost:%s/ for GraphQL playground", port)
 	log.Fatal(http.ListenAndServe(":"+port, nil))
@@ -65,6 +65,20 @@ func main() {
 
 func basicAuthMiddleware(serv *service.Service, next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+
+		var bodyBytes []byte
+		if r.Body != nil {
+			bodyBytes, _ = io.ReadAll(r.Body)
+		}
+
+		r.Body = io.NopCloser(bytes.NewBuffer(bodyBytes))
+
+		if bytes.Contains(bodyBytes, []byte("IntrospectionQuery")) ||
+			bytes.Contains(bodyBytes, []byte("register")) {
+			next.ServeHTTP(w, r)
+			return
+		}
+
 		login, pass, ok := r.BasicAuth()
 		if !ok {
 			w.Header().Set("WWW-Authenticate", `Basic realm="Restricted"`)
@@ -78,9 +92,8 @@ func basicAuthMiddleware(serv *service.Service, next http.Handler) http.Handler 
 			return
 		}
 
-		ctx := context.WithValue(r.Context(), userCtxKey, user)
+		ctx := context.WithValue(r.Context(), auth.UserCtxKey, user)
 		r = r.WithContext(ctx)
-
 		next.ServeHTTP(w, r)
 	})
 }

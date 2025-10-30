@@ -27,7 +27,6 @@ func (r *mutationResolver) Register(ctx context.Context, login string, password 
 
 // CreatePost is the resolver for the createPost field.
 func (r *mutationResolver) CreatePost(ctx context.Context, title string, content string) (*model.Post, error) {
-
 	post, err := r.Service.SrvPost.CreatePost(ctx, title, content)
 	if err != nil {
 		return nil, err
