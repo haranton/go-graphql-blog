@@ -1,6 +1,8 @@
 package graph
 
 import (
+	"log/slog"
+
 	"github.com/haranton/go-graphql-blog/internals/service"
 )
 
@@ -10,10 +12,12 @@ import (
 
 type Resolver struct {
 	Service *service.Service
+	Slogger *slog.Logger
 }
 
-func NewResolver(service *service.Service) *Resolver {
+func NewResolver(service *service.Service, slogger *slog.Logger) *Resolver {
 	return &Resolver{
 		Service: service,
+		Slogger: slogger,
 	}
 }

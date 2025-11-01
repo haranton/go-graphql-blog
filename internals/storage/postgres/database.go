@@ -1,4 +1,4 @@
-package db
+package postgres
 
 import (
 	"fmt"
@@ -11,15 +11,8 @@ import (
 
 func GetDBConnect(config *config.Config, logger *slog.Logger) *sqlx.DB {
 
-	var DBHost string
-	if config.Env == "PRODUCTION" {
-		DBHost = config.Database.HostProd
-	} else {
-		DBHost = config.Database.Host
-	}
-
 	dsn := fmt.Sprintf("host=%s port=%d user=%s password=%s dbname=%s sslmode=disable",
-		DBHost,
+		config.Database.Host,
 		config.Database.Port,
 		config.Database.User,
 		config.Database.Password,

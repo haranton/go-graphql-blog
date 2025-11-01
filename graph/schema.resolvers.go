@@ -10,14 +10,33 @@ import (
 	"strconv"
 
 	"github.com/haranton/go-graphql-blog/graph/model"
+	"github.com/haranton/go-graphql-blog/internals/dataloaders"
 )
 
 // Replies is the resolver for the replies field.
 func (r *commentResolver) Replies(ctx context.Context, obj *model.Comment, limit int32, offset int32) ([]*model.Comment, error) {
-	if obj == nil || obj.ID == "" || obj.PostID == "" {
+	loader := ctx.Value("commentLoader").(*dataloaders.CommentLoader)
+	r.Resolver.Slogger.Debug("call Replies", "obj", obj)
+	replies, err := loader.LoadReplies(ctx, obj.ID)
+	if err != nil {
+		return nil, err
+	}
+
+	start := int(offset)
+	end := start + int(limit)
+	if start > len(replies) {
 		return []*model.Comment{}, nil
 	}
-	return r.Service.SrvComm.GetReplies(ctx, obj.PostID, obj.ID, int(limit), int(offset))
+	if end > len(replies) {
+		end = len(replies)
+	}
+
+	var result []*model.Comment
+	for i := start; i < end; i++ {
+		result = append(result, replies[i])
+	}
+
+	return result, nil
 }
 
 // Register is the resolver for the register field.

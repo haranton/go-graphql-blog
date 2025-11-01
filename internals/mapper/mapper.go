@@ -27,17 +27,9 @@ func MapCommentDomainToGraph(c *models.Comment) *gqlmodel.Comment {
 	}
 }
 
-func MapPostWithCommentsDomainToGraph(p *models.PostWithComments) *gqlmodel.Post {
+func MapPostWithCommentsDomainToGraph(p *models.Post) *gqlmodel.Post {
 	if p == nil {
 		return nil
-	}
-
-	var comments []*gqlmodel.Comment
-	for i := range p.Comments {
-		// берём только корневые (parentID == nil)
-		if p.Comments[i].ParentID == nil {
-			comments = append(comments, MapCommentDomainToGraph(&p.Comments[i]))
-		}
 	}
 
 	return &gqlmodel.Post{
@@ -45,6 +37,5 @@ func MapPostWithCommentsDomainToGraph(p *models.PostWithComments) *gqlmodel.Post
 		Title:         p.Title,
 		Content:       p.Content,
 		AllowComments: p.AllowComments,
-		Comments:      comments,
 	}
 }

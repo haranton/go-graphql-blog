@@ -29,12 +29,7 @@ func (s *postService) Posts(ctx context.Context) ([]*gqlmodel.Post, error) {
 	result := make([]*gqlmodel.Post, len(domainPosts))
 	for i := range domainPosts {
 
-		result[i] = mapper.MapPostWithCommentsDomainToGraph(
-			&models.PostWithComments{
-				Post:     domainPosts[i],
-				Comments: []models.Comment{},
-			},
-		)
+		result[i] = mapper.MapPostWithCommentsDomainToGraph(&domainPosts[i])
 	}
 	return result, nil
 }
@@ -59,12 +54,7 @@ func (s *postService) CreatePost(ctx context.Context, title string, content stri
 		return nil, err
 	}
 
-	postWithComments := &models.PostWithComments{
-		Post:     *created,
-		Comments: []models.Comment{},
-	}
-
-	return mapper.MapPostWithCommentsDomainToGraph(postWithComments), nil
+	return mapper.MapPostWithCommentsDomainToGraph(created), nil
 }
 
 func (s *postService) PostWithComments(ctx context.Context, idStr string) (*gqlmodel.Post, error) {
@@ -73,7 +63,7 @@ func (s *postService) PostWithComments(ctx context.Context, idStr string) (*gqlm
 		return nil, err
 	}
 
-	post, err := s.store.PostWithComments(ctx, id)
+	post, err := s.store.GetPost(ctx, id)
 	if err != nil {
 		return nil, err
 	}

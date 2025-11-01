@@ -80,40 +80,9 @@ func (s *commentService) GetComments(ctx context.Context, postIDStr string, limi
 		return nil, fmt.Errorf("invalid postID: %w", err)
 	}
 
-	comments, err := s.store.ListComments(ctx, postID, nil, limit, offset)
+	comments, err := s.store.ListComments(ctx, postID, limit, offset)
 	if err != nil {
 		return nil, fmt.Errorf("could not list comments: %w", err)
-	}
-
-	result := make([]*model.Comment, len(comments))
-	for i, c := range comments {
-		result[i] = mapper.MapCommentDomainToGraph(&c)
-	}
-	return result, nil
-}
-
-func (s *commentService) GetReplies(ctx context.Context, postIDStr string, parentIDStr string, limit int, offset int) ([]*model.Comment, error) {
-	if limit <= 0 {
-		limit = 10
-	}
-	if limit > MaxCommentsPageSize {
-		limit = MaxCommentsPageSize
-	}
-	if offset < 0 {
-		offset = 0
-	}
-	postID, err := strconv.Atoi(postIDStr)
-	if err != nil {
-		return nil, fmt.Errorf("invalid postID: %w", err)
-	}
-	parentID, err := strconv.Atoi(parentIDStr)
-	if err != nil {
-		return nil, fmt.Errorf("invalid parentID: %w", err)
-	}
-
-	comments, err := s.store.ListComments(ctx, postID, &parentID, limit, offset)
-	if err != nil {
-		return nil, fmt.Errorf("could not list replies: %w", err)
 	}
 
 	result := make([]*model.Comment, len(comments))
