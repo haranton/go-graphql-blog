@@ -1,6 +1,10 @@
 package service
 
-import "github.com/haranton/go-graphql-blog/internals/storage"
+import (
+	"log/slog"
+
+	"github.com/haranton/go-graphql-blog/internals/storage"
+)
 
 type Service struct {
 	SrvPost *postService
@@ -8,9 +12,9 @@ type Service struct {
 	SrvAuth *AuthService
 }
 
-func NewService(storage storage.Storage) *Service {
+func NewService(storage storage.Storage, logger *slog.Logger) *Service {
 	srvPost := NewPostService(storage)
-	srvComm := NewCommentService(storage)
+	srvComm := NewCommentService(storage, logger)
 	srvAuth := NewAuthService(storage)
 
 	return &Service{

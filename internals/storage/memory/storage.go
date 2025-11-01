@@ -7,9 +7,17 @@ import (
 )
 
 type MemoryStorage struct {
-	posts         []*models.Post
-	comments      []*models.Comment
-	users         []*models.User
+	posts    []*models.Post
+	comments []*models.Comment
+	users    []*models.User
+
+	postsByID   map[int]*models.Post
+	commentByID map[int]*models.Comment
+	userBylogin map[string]*models.User
+
+	commentsByPostID  map[int][]*models.Comment
+	repliesByParentID map[int][]*models.Comment
+
 	mu            sync.RWMutex
 	nextPostID    int
 	nextCommentID int
@@ -18,9 +26,11 @@ type MemoryStorage struct {
 
 func NewMemoryStorage() *MemoryStorage {
 	return &MemoryStorage{
-		posts:    []*models.Post{},
-		comments: []*models.Comment{},
-		users:    []*models.User{},
+		postsByID:         make(map[int]*models.Post),
+		commentByID:       make(map[int]*models.Comment),
+		userBylogin:       make(map[string]*models.User),
+		commentsByPostID:  make(map[int][]*models.Comment),
+		repliesByParentID: make(map[int][]*models.Comment),
 	}
 }
 

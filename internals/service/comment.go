@@ -2,8 +2,8 @@ package service
 
 import (
 	"context"
-	"errors"
 	"fmt"
+	"log/slog"
 	"strconv"
 
 	"github.com/haranton/go-graphql-blog/graph/model"
@@ -14,29 +14,24 @@ import (
 	"github.com/haranton/go-graphql-blog/internals/storage"
 )
 
-const MaxCommentsPageSize = 100
+const maxCommentsPageSize = 100
+const defaultOffset = 0
+const defaultLimit = 10
 
 type commentService struct {
-	store storage.Storage
+	store   storage.Storage
+	slogger *slog.Logger
 }
 
-func NewCommentService(store storage.Storage) *commentService {
-	return &commentService{store: store}
+func NewCommentService(store storage.Storage, logger *slog.Logger) *commentService {
+	return &commentService{store: store, slogger: logger}
 }
 
 func (s *commentService) AddComment(ctx context.Context, postIDStr string, parentIDStr *string, content string) (*gqlmodel.Comment, error) {
-	if content == "" {
-		return nil, errors.New("content must be provided")
-	}
 
 	postID, err := strconv.Atoi(postIDStr)
 	if err != nil {
 		return nil, err
-	}
-
-	contentForCheckLen := []rune(content)
-	if len(contentForCheckLen) > 2000 {
-		return nil, errors.New("content length must be less than 2000 characters")
 	}
 
 	var parentID *int
@@ -46,6 +41,40 @@ func (s *commentService) AddComment(ctx context.Context, postIDStr string, paren
 			return nil, err2
 		}
 		parentID = &pid
+	}
+
+	//Проверяем что post сущеcтвует
+	post, err := s.store.GetPost(ctx, postID)
+	if err != nil {
+		s.slogger.Error("failed to get post", "postID", postID, "error", err)
+		return nil, err
+	}
+
+	if post == nil {
+		s.slogger.Error("post not found", "postID", postID)
+		return nil, fmt.Errorf("post with ID %d not found", postID)
+	}
+
+	if !post.AllowComments {
+		s.slogger.Error("comments are disabled", "postID", postID)
+		return nil, fmt.Errorf("comments are disabled for post with ID %d", postID)
+	}
+
+	//Проверяем что комментарий с parentId сущевствует
+	if parentID != nil {
+		parentComment, err := s.store.Comment(ctx, *parentID)
+		if err != nil {
+			s.slogger.Error("failed to get parent comment", "parentID", *parentID, "error", err)
+			return nil, err
+		}
+		if parentComment == nil {
+			s.slogger.Error("parent comment not found", "parentID", *parentID)
+			return nil, fmt.Errorf("parent comment with ID %d not found", *parentID)
+		}
+		if parentComment.PostID != postID {
+			s.slogger.Error("parent comment does not belong to post", "parentID", *parentID, "postID", postID)
+			return nil, fmt.Errorf("parent comment with ID %d does not belong to post with ID %d", *parentID, postID)
+		}
 	}
 
 	user := auth.ForContext(ctx)
@@ -67,13 +96,13 @@ func (s *commentService) AddComment(ctx context.Context, postIDStr string, paren
 
 func (s *commentService) GetComments(ctx context.Context, postIDStr string, limit int, offset int) ([]*model.Comment, error) {
 	if limit <= 0 {
-		limit = 10
+		limit = defaultLimit
 	}
-	if limit > MaxCommentsPageSize {
-		limit = MaxCommentsPageSize
+	if limit > maxCommentsPageSize {
+		limit = maxCommentsPageSize
 	}
 	if offset < 0 {
-		offset = 0
+		offset = defaultOffset
 	}
 	postID, err := strconv.Atoi(postIDStr)
 	if err != nil {

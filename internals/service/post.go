@@ -34,13 +34,9 @@ func (s *postService) Posts(ctx context.Context) ([]*gqlmodel.Post, error) {
 	return result, nil
 }
 
-// Создание нового поста
 func (s *postService) CreatePost(ctx context.Context, title string, content string) (*gqlmodel.Post, error) {
-	if title == "" || content == "" { // todo возможно излично
-		return nil, errors.New("title and content must be provided")
-	}
 
-	user := auth.ForContext(ctx) //todo возможно нужна проверка на nil
+	user := auth.ForContext(ctx)
 
 	domainPost := &models.Post{
 		Title:         title,
@@ -57,7 +53,8 @@ func (s *postService) CreatePost(ctx context.Context, title string, content stri
 	return mapper.MapPostWithCommentsDomainToGraph(created), nil
 }
 
-func (s *postService) PostWithComments(ctx context.Context, idStr string) (*gqlmodel.Post, error) {
+func (s *postService) Post(ctx context.Context, idStr string) (*gqlmodel.Post, error) {
+
 	id, err := strconv.Atoi(idStr)
 	if err != nil {
 		return nil, err
@@ -67,7 +64,8 @@ func (s *postService) PostWithComments(ctx context.Context, idStr string) (*gqlm
 	if err != nil {
 		return nil, err
 	}
-	if post == nil { //todo нужно обрабатывать как ошибку если значение не найдено
+
+	if post == nil {
 		return nil, nil
 	}
 

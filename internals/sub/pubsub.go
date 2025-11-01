@@ -1,7 +1,6 @@
 package sub
 
 import (
-	"fmt"
 	"sync"
 
 	"github.com/haranton/go-graphql-blog/graph/model"
@@ -49,8 +48,6 @@ func (comSub *CommentPubSub) Unsubscribe(postId string, ch chan *model.Comment) 
 func (comSub *CommentPubSub) Publish(comment *model.Comment) {
 	comSub.mu.RLock()
 	defer comSub.mu.RUnlock()
-
-	fmt.Printf("Publishing comment to subscribers of postID %s\n", comment.PostID)
 
 	if chSub, ok := comSub.subscribers[comment.PostID]; ok {
 		for ch := range chSub {

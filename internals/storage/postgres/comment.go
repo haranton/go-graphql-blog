@@ -8,6 +8,20 @@ import (
 	"github.com/lib/pq"
 )
 
+func (st *PostgresStorage) Comment(ctx context.Context, id int) (*models.Comment, error) {
+	query := `
+		SELECT id, post_id, parent_id, user_id, content, created_at, updated_at
+		FROM comments
+		WHERE id = $1;
+	`
+	var comment models.Comment
+	err := st.db.GetContext(ctx, &comment, query, id)
+	if err != nil {
+		return nil, fmt.Errorf("failed to get comment: %w", err)
+	}
+	return &comment, nil
+}
+
 func (st *PostgresStorage) CreateComment(ctx context.Context, comment *models.Comment) (*models.Comment, error) {
 
 	query := `

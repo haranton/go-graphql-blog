@@ -9,10 +9,10 @@ import (
 func (st *MemoryStorage) CreateUser(ctx context.Context, user *models.User) (*models.User, error) {
 	st.mu.Lock()
 	defer st.mu.Unlock()
-
 	st.nextUserID++
 	user.ID = st.nextUserID
 	st.users = append(st.users, user)
+	st.userBylogin[user.Login] = user
 
 	return user, nil
 }
@@ -20,6 +20,11 @@ func (st *MemoryStorage) CreateUser(ctx context.Context, user *models.User) (*mo
 func (st *MemoryStorage) UserByLogin(ctx context.Context, login string) (*models.User, error) {
 	st.mu.RLock()
 	defer st.mu.RUnlock()
+
+	if u, ok := st.userBylogin[login]; ok {
+		copy := *u
+		return &copy, nil
+	}
 
 	for _, u := range st.users {
 		if u.Login == login {

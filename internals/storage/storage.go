@@ -18,6 +18,7 @@ type PostStorage interface {
 }
 
 type CommentStorage interface {
+	Comment(ctx context.Context, id int) (*models.Comment, error)
 	CreateComment(ctx context.Context, comment *models.Comment) (*models.Comment, error)
 	ListComments(ctx context.Context, postID, limit, offset int) ([]models.Comment, error)
 	ListReplies(ctx context.Context, parentID, limit, offset int) ([]models.Comment, error)

@@ -2,11 +2,32 @@ package memory
 
 import (
 	"context"
+	"sort"
 	"time"
 
 	"github.com/haranton/go-graphql-blog/internals/models"
 )
 
+// Получить комментарий по ID
+func (st *MemoryStorage) Comment(ctx context.Context, id int) (*models.Comment, error) {
+	st.mu.RLock()
+	defer st.mu.RUnlock()
+
+	if c, ok := st.commentByID[id]; ok {
+		copy := *c
+		return &copy, nil
+	}
+
+	for _, c := range st.comments {
+		if c.ID == id {
+			copy := *c
+			return &copy, nil
+		}
+	}
+	return nil, nil
+}
+
+// Создать комментарий с обновлением индексов
 func (st *MemoryStorage) CreateComment(ctx context.Context, comment *models.Comment) (*models.Comment, error) {
 	st.mu.Lock()
 	defer st.mu.Unlock()
@@ -18,82 +39,99 @@ func (st *MemoryStorage) CreateComment(ctx context.Context, comment *models.Comm
 
 	copy := *comment
 	st.comments = append(st.comments, &copy)
+	st.commentByID[copy.ID] = &copy
+	// Индекс по посту
+	st.commentsByPostID[copy.PostID] = append(st.commentsByPostID[copy.PostID], &copy)
+
+	// Индекс по родителю
+	if copy.ParentID != nil {
+		st.repliesByParentID[*copy.ParentID] = append(st.repliesByParentID[*copy.ParentID], &copy)
+	}
 
 	return &copy, nil
 }
 
-// ListComments — верхний уровень комментариев (parent_id IS NULL)
+// Список верхнеуровневых комментариев поста
 func (st *MemoryStorage) ListComments(ctx context.Context, postID, limit, offset int) ([]models.Comment, error) {
 	st.mu.RLock()
 	defer st.mu.RUnlock()
 
-	var filtered []models.Comment
-	for _, c := range st.comments {
-		if c.PostID == postID && c.ParentID == nil {
-			filtered = append(filtered, *c)
+	all := st.commentsByPostID[postID]
+	if len(all) == 0 {
+		return []models.Comment{}, nil
+	}
+
+	var topLevel []models.Comment
+	for _, c := range all {
+		if c.ParentID == nil {
+			topLevel = append(topLevel, *c)
 		}
 	}
 
-	sortByCreatedAt(filtered)
+	sort.Slice(topLevel, func(i, j int) bool {
+		return topLevel[i].CreatedAt.Before(topLevel[j].CreatedAt)
+	})
 
-	if offset >= len(filtered) {
+	if offset >= len(topLevel) {
 		return []models.Comment{}, nil
 	}
 
 	end := offset + limit
-	if end > len(filtered) {
-		end = len(filtered)
+	if end > len(topLevel) {
+		end = len(topLevel)
 	}
 
-	return filtered[offset:end], nil
+	return topLevel[offset:end], nil
 }
 
-// ListReplies — одиночный parent_id (для сервисного слоя)
+// Список ответов по parent_id
 func (st *MemoryStorage) ListReplies(ctx context.Context, parentID, limit, offset int) ([]models.Comment, error) {
 	st.mu.RLock()
 	defer st.mu.RUnlock()
 
-	var filtered []models.Comment
-	for _, c := range st.comments {
-		if c.ParentID != nil && *c.ParentID == parentID {
-			filtered = append(filtered, *c)
-		}
+	all := st.repliesByParentID[parentID]
+	if len(all) == 0 {
+		return []models.Comment{}, nil
 	}
 
-	sortByCreatedAt(filtered)
+	replies := make([]models.Comment, len(all))
+	for i, c := range all {
+		replies[i] = *c
+	}
 
-	if offset >= len(filtered) {
+	sort.Slice(replies, func(i, j int) bool {
+		return replies[i].CreatedAt.Before(replies[j].CreatedAt)
+	})
+
+	if offset >= len(replies) {
 		return []models.Comment{}, nil
 	}
 
 	end := offset + limit
-	if end > len(filtered) {
-		end = len(filtered)
+	if end > len(replies) {
+		end = len(replies)
 	}
 
-	return filtered[offset:end], nil
+	return replies[offset:end], nil
 }
 
-// ListRepliesBatch — для DataLoader
+// Для DataLoader — получить все ответы по набору parentIDs
 func (st *MemoryStorage) ListRepliesBatch(ctx context.Context, parentIDs []int) ([]models.Comment, error) {
 	st.mu.RLock()
 	defer st.mu.RUnlock()
 
-	ids := make(map[int]struct{}, len(parentIDs))
+	var results []models.Comment
 	for _, id := range parentIDs {
-		ids[id] = struct{}{}
-	}
-
-	var filtered []models.Comment
-	for _, c := range st.comments {
-		if c.ParentID != nil {
-			if _, ok := ids[*c.ParentID]; ok {
-				filtered = append(filtered, *c)
+		if replies, ok := st.repliesByParentID[id]; ok {
+			for _, c := range replies {
+				results = append(results, *c)
 			}
 		}
 	}
 
-	sortByCreatedAt(filtered)
+	sort.Slice(results, func(i, j int) bool {
+		return results[i].CreatedAt.Before(results[j].CreatedAt)
+	})
 
-	return filtered, nil
+	return results, nil
 }

@@ -39,12 +39,13 @@ func New(cfg *config.Config, logger *slog.Logger) *App {
 		logger.Info("Using Postgres storage")
 		dbConn := postgres.GetDBConnect(cfg, logger)
 		store = postgres.NewPostgresStorage(dbConn)
+		migrator.MustRunMigrations(cfg, logger)
 	} else {
 		logger.Info("Using in-memory storage")
 		store = memory.NewMemoryStorage()
 	}
 
-	serv := service.NewService(store)
+	serv := service.NewService(store, logger)
 	commentPubSub := sub.NewCommentPubSub()
 	resolver := graph.NewResolver(serv, logger, commentPubSub)
 
@@ -78,8 +79,6 @@ func New(cfg *config.Config, logger *slog.Logger) *App {
 }
 
 func (a *App) MustStart() {
-
-	migrator.MustRunMigrations(a.cfg, a.logger)
 
 	http.Handle("/", playground.Handler("GraphQL playground", "/query"))
 	http.Handle("/query", middleware.DataLoaderMiddleware(a.store)(a.srv))

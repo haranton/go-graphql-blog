@@ -6,6 +6,7 @@ package graph
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"strconv"
 
@@ -64,6 +65,25 @@ func (r *mutationResolver) CreatePost(ctx context.Context, title string, content
 
 // AddComment is the resolver for the addComment field.
 func (r *mutationResolver) AddComment(ctx context.Context, postID string, parentID *string, content string) (*model.Comment, error) {
+
+	if parentID != nil && *parentID != "" {
+		pid, err := strconv.Atoi(*parentID)
+		if err != nil {
+			return nil, fmt.Errorf("invalid parentID: must be a numeric string, got %q", *parentID)
+		}
+		if pid < 1 {
+			return nil, fmt.Errorf("invalid parentID: must be >= 1, got %d", pid)
+		}
+	}
+
+	if len(content) == 0 {
+		return nil, errors.New("comment cannot be empty")
+	}
+
+	if len(content) > 2000 {
+		return nil, errors.New("comment too long (max 2000 characters)")
+	}
+
 	comment, err := r.Service.SrvComm.AddComment(ctx, postID, parentID, content)
 	if err != nil {
 		fmt.Println("Error:", err)
@@ -101,13 +121,13 @@ func (r *queryResolver) Posts(ctx context.Context) ([]*model.Post, error) {
 
 // Post is the resolver for the post field.
 func (r *queryResolver) Post(ctx context.Context, id string) (*model.Post, error) {
-	postWithComments, err := r.Service.SrvPost.PostWithComments(ctx, id)
+	post, err := r.Service.SrvPost.Post(ctx, id)
 	if err != nil {
 		fmt.Println("Error:", err)
 		return nil, err
 	}
 
-	return postWithComments, nil
+	return post, nil
 }
 
 // CommentAdded is the resolver for the commentAdded field.
