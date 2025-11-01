@@ -64,13 +64,15 @@ func (r *mutationResolver) CreatePost(ctx context.Context, title string, content
 
 // AddComment is the resolver for the addComment field.
 func (r *mutationResolver) AddComment(ctx context.Context, postID string, parentID *string, content string) (*model.Comment, error) {
-	posts, err := r.Service.SrvComm.AddComment(ctx, postID, parentID, content)
+	comment, err := r.Service.SrvComm.AddComment(ctx, postID, parentID, content)
 	if err != nil {
 		fmt.Println("Error:", err)
 		return nil, err
 	}
 
-	return posts, nil
+	go r.Sub.Publish(comment)
+
+	return comment, nil
 }
 
 // DisallowComments is the resolver for the disallowComments field.
@@ -108,9 +110,19 @@ func (r *queryResolver) Post(ctx context.Context, id string) (*model.Post, error
 	return postWithComments, nil
 }
 
-// NewComment is the resolver for the newComment field.
-func (r *subscriptionResolver) NewComment(ctx context.Context, postID string) (<-chan *model.Comment, error) {
-	panic(fmt.Errorf("not implemented: NewComment - newComment"))
+// CommentAdded is the resolver for the commentAdded field.
+func (r *subscriptionResolver) CommentAdded(ctx context.Context, postID string) (<-chan *model.Comment, error) {
+	r.Resolver.Slogger.Debug("Subscription started", "postID", postID)
+
+	commentChan := r.Sub.Subscribe(postID)
+
+	go func() {
+		<-ctx.Done()
+		r.Sub.Unsubscribe(postID, commentChan)
+	}()
+
+	return commentChan, nil
+
 }
 
 // Comment returns CommentResolver implementation.

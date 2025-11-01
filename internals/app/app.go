@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"log/slog"
 	"net/http"
+	"time"
 
 	"github.com/99designs/gqlgen/graphql/handler"
 	"github.com/99designs/gqlgen/graphql/handler/extension"
@@ -19,6 +20,7 @@ import (
 	"github.com/haranton/go-graphql-blog/internals/storage/memory"
 	"github.com/haranton/go-graphql-blog/internals/storage/postgres"
 	"github.com/haranton/go-graphql-blog/internals/storage/postgres/migrator"
+	"github.com/haranton/go-graphql-blog/internals/sub"
 	"github.com/vektah/gqlparser/v2/ast"
 )
 
@@ -27,6 +29,7 @@ type App struct {
 	logger *slog.Logger
 	store  storage.Storage
 	srv    *handler.Server
+	sub    *sub.CommentPubSub
 }
 
 func New(cfg *config.Config, logger *slog.Logger) *App {
@@ -42,7 +45,8 @@ func New(cfg *config.Config, logger *slog.Logger) *App {
 	}
 
 	serv := service.NewService(store)
-	resolver := graph.NewResolver(serv, logger)
+	commentPubSub := sub.NewCommentPubSub()
+	resolver := graph.NewResolver(serv, logger, commentPubSub)
 
 	schema := graph.NewExecutableSchema(graph.Config{
 		Resolvers: resolver,
@@ -55,6 +59,9 @@ func New(cfg *config.Config, logger *slog.Logger) *App {
 	srv.AddTransport(transport.Options{})
 	srv.AddTransport(transport.GET{})
 	srv.AddTransport(transport.POST{})
+	srv.AddTransport(transport.Websocket{
+		KeepAlivePingInterval: 10 * time.Second,
+	})
 	srv.SetQueryCache(lru.New[*ast.QueryDocument](1000))
 	srv.Use(extension.Introspection{})
 	srv.Use(extension.AutomaticPersistedQuery{
@@ -66,6 +73,7 @@ func New(cfg *config.Config, logger *slog.Logger) *App {
 		logger: logger,
 		store:  store,
 		srv:    srv,
+		sub:    commentPubSub,
 	}
 }
 

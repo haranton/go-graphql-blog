@@ -80,7 +80,7 @@ type ComplexityRoot struct {
 	}
 
 	Subscription struct {
-		NewComment func(childComplexity int, postID string) int
+		CommentAdded func(childComplexity int, postID string) int
 	}
 
 	User struct {
@@ -106,7 +106,7 @@ type QueryResolver interface {
 	Post(ctx context.Context, id string) (*model.Post, error)
 }
 type SubscriptionResolver interface {
-	NewComment(ctx context.Context, postID string) (<-chan *model.Comment, error)
+	CommentAdded(ctx context.Context, postID string) (<-chan *model.Comment, error)
 }
 
 type executableSchema struct {
@@ -263,17 +263,17 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 
 		return e.complexity.Query.Posts(childComplexity), true
 
-	case "Subscription.newComment":
-		if e.complexity.Subscription.NewComment == nil {
+	case "Subscription.commentAdded":
+		if e.complexity.Subscription.CommentAdded == nil {
 			break
 		}
 
-		args, err := ec.field_Subscription_newComment_args(ctx, rawArgs)
+		args, err := ec.field_Subscription_commentAdded_args(ctx, rawArgs)
 		if err != nil {
 			return 0, false
 		}
 
-		return e.complexity.Subscription.NewComment(childComplexity, args["postId"].(string)), true
+		return e.complexity.Subscription.CommentAdded(childComplexity, args["postId"].(string)), true
 
 	case "User.id":
 		if e.complexity.User.ID == nil {
@@ -546,7 +546,7 @@ func (ec *executionContext) field_Query_post_args(ctx context.Context, rawArgs m
 	return args, nil
 }
 
-func (ec *executionContext) field_Subscription_newComment_args(ctx context.Context, rawArgs map[string]any) (map[string]any, error) {
+func (ec *executionContext) field_Subscription_commentAdded_args(ctx context.Context, rawArgs map[string]any) (map[string]any, error) {
 	var err error
 	args := map[string]any{}
 	arg0, err := graphql.ProcessArgField(ctx, rawArgs, "postId", ec.unmarshalNID2string)
@@ -1382,15 +1382,15 @@ func (ec *executionContext) fieldContext_Query___schema(_ context.Context, field
 	return fc, nil
 }
 
-func (ec *executionContext) _Subscription_newComment(ctx context.Context, field graphql.CollectedField) (ret func(ctx context.Context) graphql.Marshaler) {
+func (ec *executionContext) _Subscription_commentAdded(ctx context.Context, field graphql.CollectedField) (ret func(ctx context.Context) graphql.Marshaler) {
 	return graphql.ResolveFieldStream(
 		ctx,
 		ec.OperationContext,
 		field,
-		ec.fieldContext_Subscription_newComment,
+		ec.fieldContext_Subscription_commentAdded,
 		func(ctx context.Context) (any, error) {
 			fc := graphql.GetFieldContext(ctx)
-			return ec.resolvers.Subscription().NewComment(ctx, fc.Args["postId"].(string))
+			return ec.resolvers.Subscription().CommentAdded(ctx, fc.Args["postId"].(string))
 		},
 		nil,
 		ec.marshalNComment2ᚖgithubᚗcomᚋharantonᚋgoᚑgraphqlᚑblogᚋgraphᚋmodelᚐComment,
@@ -1399,7 +1399,7 @@ func (ec *executionContext) _Subscription_newComment(ctx context.Context, field 
 	)
 }
 
-func (ec *executionContext) fieldContext_Subscription_newComment(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+func (ec *executionContext) fieldContext_Subscription_commentAdded(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
 	fc = &graphql.FieldContext{
 		Object:     "Subscription",
 		Field:      field,
@@ -1428,7 +1428,7 @@ func (ec *executionContext) fieldContext_Subscription_newComment(ctx context.Con
 		}
 	}()
 	ctx = graphql.WithFieldContext(ctx, fc)
-	if fc.Args, err = ec.field_Subscription_newComment_args(ctx, field.ArgumentMap(ec.Variables)); err != nil {
+	if fc.Args, err = ec.field_Subscription_commentAdded_args(ctx, field.ArgumentMap(ec.Variables)); err != nil {
 		ec.Error(ctx, err)
 		return fc, err
 	}
@@ -3298,8 +3298,8 @@ func (ec *executionContext) _Subscription(ctx context.Context, sel ast.Selection
 	}
 
 	switch fields[0].Name {
-	case "newComment":
-		return ec._Subscription_newComment(ctx, fields[0])
+	case "commentAdded":
+		return ec._Subscription_commentAdded(ctx, fields[0])
 	default:
 		panic("unknown field " + strconv.Quote(fields[0].Name))
 	}

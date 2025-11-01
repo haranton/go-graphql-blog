@@ -34,5 +34,5 @@ type Mutation {
 }
 
 type Subscription {
-    newComment(postId: ID!): Comment!
+    commentAdded(postId: ID!): Comment!
 }

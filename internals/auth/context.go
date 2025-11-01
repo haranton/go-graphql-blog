@@ -21,3 +21,8 @@ func ForContext(ctx context.Context) *models.User {
 	}
 	return raw
 }
+
+// WithContext adds a user to the context
+func WithContext(ctx context.Context, user *models.User) context.Context {
+	return context.WithValue(ctx, UserCtxKey, user)
+}

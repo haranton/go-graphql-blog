@@ -9,12 +9,6 @@ import (
 )
 
 func (st *PostgresStorage) CreateComment(ctx context.Context, comment *models.Comment) (*models.Comment, error) {
-	if comment.PostID == 0 {
-		return nil, fmt.Errorf("post_id is required")
-	}
-	if len([]rune(comment.Content)) > 2000 {
-		return nil, fmt.Errorf("comment content exceeds 2000 characters")
-	}
 
 	query := `
         INSERT INTO comments (post_id, parent_id, user_id, content, created_at, updated_at)
