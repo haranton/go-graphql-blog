@@ -7,7 +7,7 @@ CREATE TABLE IF NOT EXISTS users (
 
 CREATE TABLE IF NOT EXISTS posts (
     id SERIAL PRIMARY KEY,
-    title VARCHAR(255) NOT NULL,
+    title TEXT NOT NULL,
     content TEXT NOT NULL,
     user_id INT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
     allow_comments BOOLEAN NOT NULL DEFAULT TRUE,
@@ -29,3 +29,4 @@ CREATE TABLE IF NOT EXISTS comments (
 
 CREATE INDEX IF NOT EXISTS idx_comments_post_id ON comments(post_id);
 CREATE INDEX IF NOT EXISTS idx_comments_parent_id ON comments(parent_id);
+CREATE UNIQUE INDEX IF NOT EXISTS idx_users_login ON users(login);

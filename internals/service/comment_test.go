@@ -3,6 +3,7 @@ package service
 import (
 	"context"
 	"errors"
+	"fmt"
 	"log/slog"
 	"os"
 	"testing"
@@ -18,6 +19,18 @@ func TestCommentService_AddComment(t *testing.T) {
 	t.Run("successful creation with parent", func(t *testing.T) {
 		mockStore := &mocks.MockStorage{}
 		service := service(mockStore)
+
+		mockStore.GetPostFunc = func(ctx context.Context, id int) (*models.Post, error) {
+			return &models.Post{ID: id, AllowComments: true}, nil
+		}
+
+		mockStore.CommentFunc = func(ctx context.Context, id int) (*models.Comment, error) {
+			if id == 5 {
+				return &models.Comment{ID: 5, PostID: 10}, nil
+			}
+			return nil, fmt.Errorf("not found")
+		}
+
 		ctx := auth.WithContext(context.Background(), &models.User{ID: 1})
 
 		parentIDStr := "5"
@@ -47,7 +60,24 @@ func TestCommentService_AddComment(t *testing.T) {
 	t.Run("successful creation without parent", func(t *testing.T) {
 		mockStore := &mocks.MockStorage{}
 		service := service(mockStore)
+		mockStore.CommentFunc = func(ctx context.Context, id int) (*models.Comment, error) {
+			if id == 5 {
+				return &models.Comment{ID: 5, PostID: 10}, nil
+			}
+			return nil, fmt.Errorf("not found")
+		}
 		ctx := auth.WithContext(context.Background(), &models.User{ID: 1})
+
+		mockStore.CommentFunc = func(ctx context.Context, id int) (*models.Comment, error) {
+			if id == 5 {
+				return &models.Comment{ID: 5, PostID: 10}, nil
+			}
+			return nil, fmt.Errorf("not found")
+		}
+
+		mockStore.GetPostFunc = func(ctx context.Context, id int) (*models.Post, error) {
+			return &models.Post{ID: id, AllowComments: true}, nil
+		}
 
 		mockStore.CreateCommentFunc = func(ctx context.Context, comment *models.Comment) (*models.Comment, error) {
 			assert.Nil(t, comment.ParentID)
@@ -105,6 +135,10 @@ func TestCommentService_AddComment(t *testing.T) {
 		mockStore := &mocks.MockStorage{}
 		service := service(mockStore)
 		ctx := auth.WithContext(context.Background(), &models.User{ID: 1})
+
+		mockStore.GetPostFunc = func(ctx context.Context, id int) (*models.Post, error) {
+			return &models.Post{ID: id, AllowComments: true}, nil
+		}
 
 		mockStore.CreateCommentFunc = func(ctx context.Context, comment *models.Comment) (*models.Comment, error) {
 			return nil, errors.New("storage error")

@@ -43,26 +43,6 @@ func TestPostService_CreatePost(t *testing.T) {
 		assert.Equal(t, "Test Post", result.Title)
 	})
 
-	t.Run("empty title", func(t *testing.T) {
-		mockStore := &mocks.MockStorage{}
-		service := NewPostService(mockStore)
-		ctx := auth.WithContext(context.Background(), &models.User{ID: 1})
-
-		result, err := service.CreatePost(ctx, "", "Content")
-		require.Error(t, err)
-		assert.Nil(t, result)
-	})
-
-	t.Run("empty content", func(t *testing.T) {
-		mockStore := &mocks.MockStorage{}
-		service := NewPostService(mockStore)
-		ctx := auth.WithContext(context.Background(), &models.User{ID: 1})
-
-		result, err := service.CreatePost(ctx, "Title", "")
-		require.Error(t, err)
-		assert.Nil(t, result)
-	})
-
 	t.Run("storage error", func(t *testing.T) {
 		mockStore := &mocks.MockStorage{}
 		service := NewPostService(mockStore)

@@ -18,18 +18,19 @@ import (
 	"github.com/haranton/go-graphql-blog/internals/service"
 	"github.com/haranton/go-graphql-blog/internals/storage"
 	"github.com/haranton/go-graphql-blog/internals/storage/memory"
+	"github.com/haranton/go-graphql-blog/internals/storage/migrator"
 	"github.com/haranton/go-graphql-blog/internals/storage/postgres"
-	"github.com/haranton/go-graphql-blog/internals/storage/postgres/migrator"
 	"github.com/haranton/go-graphql-blog/internals/sub"
 	"github.com/vektah/gqlparser/v2/ast"
 )
 
 type App struct {
-	cfg    *config.Config
-	logger *slog.Logger
-	store  storage.Storage
-	srv    *handler.Server
-	sub    *sub.CommentPubSub
+	cfg     *config.Config
+	logger  *slog.Logger
+	store   storage.Storage
+	srv     *handler.Server
+	service *service.Service
+	sub     *sub.CommentPubSub
 }
 
 func New(cfg *config.Config, logger *slog.Logger) *App {
@@ -70,18 +71,24 @@ func New(cfg *config.Config, logger *slog.Logger) *App {
 	})
 
 	return &App{
-		cfg:    cfg,
-		logger: logger,
-		store:  store,
-		srv:    srv,
-		sub:    commentPubSub,
+		cfg:     cfg,
+		logger:  logger,
+		store:   store,
+		srv:     srv,
+		sub:     commentPubSub,
+		service: serv,
 	}
 }
 
 func (a *App) MustStart() {
 
+	authHandler := middleware.BasicAuthMiddleware(
+		a.service,
+		middleware.DataLoaderMiddleware(a.store)(a.srv),
+	)
+
 	http.Handle("/", playground.Handler("GraphQL playground", "/query"))
-	http.Handle("/query", middleware.DataLoaderMiddleware(a.store)(a.srv))
+	http.Handle("/query", authHandler)
 
 	addr := fmt.Sprintf(":%d", a.cfg.App.Port)
 	a.logger.Info("GraphQL server running", slog.String("addr", addr))

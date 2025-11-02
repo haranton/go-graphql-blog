@@ -1392,7 +1392,20 @@ func (ec *executionContext) _Subscription_commentAdded(ctx context.Context, fiel
 			fc := graphql.GetFieldContext(ctx)
 			return ec.resolvers.Subscription().CommentAdded(ctx, fc.Args["postId"].(string))
 		},
-		nil,
+		func(ctx context.Context, next graphql.Resolver) graphql.Resolver {
+			directive0 := next
+
+			directive1 := func(ctx context.Context) (any, error) {
+				if ec.directives.Auth == nil {
+					var zeroVal *model.Comment
+					return zeroVal, errors.New("directive auth is not implemented")
+				}
+				return ec.directives.Auth(ctx, nil, directive0)
+			}
+
+			next = directive1
+			return next
+		},
 		ec.marshalNComment2ᚖgithubᚗcomᚋharantonᚋgoᚑgraphqlᚑblogᚋgraphᚋmodelᚐComment,
 		true,
 		true,

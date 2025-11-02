@@ -8,27 +8,26 @@ import (
 )
 
 type Config struct {
-	Env string `yaml:"env"`
+	Env string `yaml:"env" env-required:"true"`
 
 	App struct {
-		Port int `yaml:"port"`
+		Port int `yaml:"port" env-required:"true"`
 	} `yaml:"app"`
 
 	Database struct {
-		Host     string `yaml:"host"` //todo добавть reqired чтобы выдавать ошибку если параметров нет
-		Port     int    `yaml:"port"`
-		User     string `yaml:"user"`
-		Password string `yaml:"password"`
-		Name     string `yaml:"name"`
+		Host     string `yaml:"host" env-required:"true"`
+		Port     int    `yaml:"port" env-required:"true"`
+		User     string `yaml:"user" env-required:"true"`
+		Password string `yaml:"password" env-required:"true"`
+		Name     string `yaml:"name" env-required:"true"`
 	} `yaml:"database"`
 
 	Migrations struct {
-		Path string `yaml:"path"`
+		Path string `yaml:"path" env-required:"true"`
 	} `yaml:"migrations"`
 
-	NotifyServiceAddr string `yaml:"NotifyServiceAddr"`
-	Storage           struct {
-		Type string `yaml:"type"`
+	Storage struct {
+		Type string `yaml:"type" env-required:"true"`
 	} `yaml:"storage"`
 }
 
@@ -59,15 +58,14 @@ func MustLoad() *Config {
 		panic("storage type is empty (use --storage)")
 	}
 	cfg.Storage.Type = typeStorage
+
 	return &cfg
 }
 
 func parseFlags() *Flags {
 	var f Flags
-
 	flag.StringVar(&f.ConfigPath, "config", "", "path to config file (or use CONFIG_PATH)")
 	flag.StringVar(&f.StorageType, "storage", "", "type of storage: memory or postgres")
 	flag.Parse()
-
 	return &f
 }

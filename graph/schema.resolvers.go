@@ -65,7 +65,6 @@ func (r *mutationResolver) CreatePost(ctx context.Context, title string, content
 
 // AddComment is the resolver for the addComment field.
 func (r *mutationResolver) AddComment(ctx context.Context, postID string, parentID *string, content string) (*model.Comment, error) {
-
 	if parentID != nil && *parentID != "" {
 		pid, err := strconv.Atoi(*parentID)
 		if err != nil {
@@ -134,6 +133,14 @@ func (r *queryResolver) Post(ctx context.Context, id string) (*model.Post, error
 func (r *subscriptionResolver) CommentAdded(ctx context.Context, postID string) (<-chan *model.Comment, error) {
 	r.Resolver.Slogger.Debug("Subscription started", "postID", postID)
 
+	existingPost, err := r.Service.SrvPost.Post(ctx, postID)
+	if err != nil {
+		return nil, err
+	}
+	if existingPost == nil {
+		return nil, fmt.Errorf("post not found")
+	}
+
 	commentChan := r.Sub.Subscribe(postID)
 
 	go func() {
@@ -142,7 +149,6 @@ func (r *subscriptionResolver) CommentAdded(ctx context.Context, postID string) 
 	}()
 
 	return commentChan, nil
-
 }
 
 // Comment returns CommentResolver implementation.
