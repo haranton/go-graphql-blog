@@ -8,7 +8,6 @@ import (
 	"github.com/haranton/go-graphql-blog/internals/models"
 )
 
-// Получить комментарий по ID
 func (st *MemoryStorage) Comment(ctx context.Context, id int) (*models.Comment, error) {
 	st.mu.RLock()
 	defer st.mu.RUnlock()
@@ -27,7 +26,6 @@ func (st *MemoryStorage) Comment(ctx context.Context, id int) (*models.Comment, 
 	return nil, nil
 }
 
-// Создать комментарий с обновлением индексов
 func (st *MemoryStorage) CreateComment(ctx context.Context, comment *models.Comment) (*models.Comment, error) {
 	st.mu.Lock()
 	defer st.mu.Unlock()
@@ -40,10 +38,9 @@ func (st *MemoryStorage) CreateComment(ctx context.Context, comment *models.Comm
 	copy := *comment
 	st.comments = append(st.comments, &copy)
 	st.commentByID[copy.ID] = &copy
-	// Индекс по посту
+
 	st.commentsByPostID[copy.PostID] = append(st.commentsByPostID[copy.PostID], &copy)
 
-	// Индекс по родителю
 	if copy.ParentID != nil {
 		st.repliesByParentID[*copy.ParentID] = append(st.repliesByParentID[*copy.ParentID], &copy)
 	}
@@ -51,7 +48,6 @@ func (st *MemoryStorage) CreateComment(ctx context.Context, comment *models.Comm
 	return &copy, nil
 }
 
-// Список верхнеуровневых комментариев поста
 func (st *MemoryStorage) ListComments(ctx context.Context, postID, limit, offset int) ([]models.Comment, error) {
 	st.mu.RLock()
 	defer st.mu.RUnlock()
