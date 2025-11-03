@@ -21,7 +21,6 @@ type MemoryStorage struct {
 	mu            sync.RWMutex
 	nextPostID    int
 	nextCommentID int
-	nextUserID    int
 }
 
 func NewMemoryStorage() *MemoryStorage {

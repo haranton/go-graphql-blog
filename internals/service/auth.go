@@ -32,8 +32,3 @@ func (s *AuthService) Authenticate(ctx context.Context, login, password string) 
 
 	return user, nil
 }
-
-func hashPassword(password string) (string, error) {
-	bytes, err := bcrypt.GenerateFromPassword([]byte(password), bcrypt.DefaultCost)
-	return string(bytes), err
-}
