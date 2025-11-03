@@ -23,7 +23,7 @@ func MapCommentDomainToGraph(c *models.Comment) *gqlmodel.Comment {
 		PostID:   strconv.Itoa(c.PostID),
 		ParentID: parentID,
 		Content:  c.Content,
-		Replies:  nil, // не заполняем Replies здесь
+		Replies:  nil,
 	}
 }
 

@@ -24,7 +24,7 @@ func (s *AuthService) Authenticate(ctx context.Context, login, password string) 
 		return nil, err
 	}
 	if user == nil {
-		return nil, errors.New("user or password uncorrectly") //todo убрать дублирование
+		return nil, errors.New("user or password uncorrectly")
 	}
 
 	if err := bcrypt.CompareHashAndPassword([]byte(user.Password), []byte(password)); err != nil {

@@ -10,7 +10,6 @@ import (
 	"github.com/99designs/gqlgen/graphql/handler/extension"
 	"github.com/99designs/gqlgen/graphql/handler/lru"
 	"github.com/99designs/gqlgen/graphql/handler/transport"
-	"github.com/99designs/gqlgen/graphql/playground"
 	"github.com/haranton/go-graphql-blog/graph"
 	"github.com/haranton/go-graphql-blog/graph/directives"
 	"github.com/haranton/go-graphql-blog/internals/config"
@@ -87,7 +86,6 @@ func (a *App) MustStart() {
 		middleware.DataLoaderMiddleware(a.store)(a.srv),
 	)
 
-	http.Handle("/", playground.Handler("GraphQL playground", "/query"))
 	http.Handle("/query", authHandler)
 
 	addr := fmt.Sprintf(":%d", a.cfg.App.Port)
