@@ -16,6 +16,7 @@ func (st *MemoryStorage) Posts(ctx context.Context) ([]models.Post, error) {
 	for i, postPtr := range st.posts {
 		result[i] = *postPtr
 	}
+
 	return result, nil
 }
 
