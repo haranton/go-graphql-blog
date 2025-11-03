@@ -26,7 +26,6 @@ type CommentStorage interface {
 }
 
 type UserStorage interface {
-	CreateUser(ctx context.Context, user *models.User) (*models.User, error)
 	UserByLogin(ctx context.Context, login string) (*models.User, error)
 }
 

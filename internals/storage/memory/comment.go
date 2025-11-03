@@ -23,6 +23,7 @@ func (st *MemoryStorage) Comment(ctx context.Context, id int) (*models.Comment, 
 			return &copy, nil
 		}
 	}
+
 	return nil, nil
 }
 

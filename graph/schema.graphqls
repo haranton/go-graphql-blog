@@ -27,7 +27,6 @@ type Query {
 }
 
 type Mutation {
-    register(login: String!, password: String!): User!
     createPost(title: String!, content: String!): Post! @auth
     addComment(postId: ID!, parentId: ID, content: String!): Comment! @auth
     disallowComments(postId: ID!): Boolean! @auth

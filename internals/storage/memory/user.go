@@ -6,17 +6,6 @@ import (
 	"github.com/haranton/go-graphql-blog/internals/models"
 )
 
-func (st *MemoryStorage) CreateUser(ctx context.Context, user *models.User) (*models.User, error) {
-	st.mu.Lock()
-	defer st.mu.Unlock()
-	st.nextUserID++
-	user.ID = st.nextUserID
-	st.users = append(st.users, user)
-	st.userBylogin[user.Login] = user
-
-	return user, nil
-}
-
 func (st *MemoryStorage) UserByLogin(ctx context.Context, login string) (*models.User, error) {
 	st.mu.RLock()
 	defer st.mu.RUnlock()
