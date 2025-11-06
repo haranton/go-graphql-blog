@@ -1,9 +1,3 @@
-// ...existing code...
-# go-graphql-blog — Описание операций
-
-Ниже приведены примеры запросов GraphQL для проекта: Query, Mutation и Subscription.
-
----
 
 ## GraphQL: схема и примеры запросов
 
